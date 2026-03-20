@@ -9,8 +9,27 @@
   <body>
     <div id="app">
       <canvas id="gameCanvas"></canvas>
-      <div id="ui-layer">
-        <button id="btn-expand">EXPAND SECTOR (Cost: <span id="expand-cost">50</span>)</button>
+      <div id="sidebar">
+        <button id="btn-toggle-sidebar">UPGRADES</button>
+        <div id="sidebar-content">
+          <h2>Chroma Boosts (+10%)</h2>
+          <div class="upgrade-item">
+            <span class="color-dot" style="background:#00e5ff;"></span> Cyan
+            <button class="btn-buy-upgrade" data-color="#00e5ff" data-cost="500">500 PTS</button>
+          </div>
+          <div class="upgrade-item">
+            <span class="color-dot" style="background:#ff3366;"></span> Pink
+            <button class="btn-buy-upgrade" data-color="#ff3366" data-cost="500">500 PTS</button>
+          </div>
+          <div class="upgrade-item">
+            <span class="color-dot" style="background:#bd00ff;"></span> Purple
+            <button class="btn-buy-upgrade" data-color="#bd00ff" data-cost="500">500 PTS</button>
+          </div>
+          <div class="upgrade-item">
+            <span class="color-dot" style="background:#ffaa00;"></span> Orange
+            <button class="btn-buy-upgrade" data-color="#ffaa00" data-cost="500">500 PTS</button>
+          </div>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.js"></script>

@@ -4,50 +4,56 @@ export class Generator {
     this.colors = ['#00e5ff', '#ff3366', '#bd00ff', '#ffaa00']; // Cyan, Pink, Purple, Orange
   }
 
-  generateInitialNodes(canvasWidth, canvasHeight) {
-    // 1. Generate a few Central Hubs (Large, source of clusters)
-    const numHubs = 3;
+  generatePlot(plotX, plotY) {
+    const minX = plotX * this.game.plotSize;
+    const minY = plotY * this.game.plotSize;
+    const maxX = minX + this.game.plotSize;
+    const maxY = minY + this.game.plotSize;
+
+    // 1. Generate Hubs (Max 7 clusters per plot as requested)
+    // We'll generate 2-3 Hubs per plot, giving 2-3 clusters total. If we want up to 7, maybe 3-5 hubs.
+    const numHubs = Math.floor(Math.random() * 3) + 2; // 2 to 4 hubs
     const hubNodes = [];
     
     for (let i = 0; i < numHubs; i++) {
-        const hub = this.spawnNode(canvasWidth, canvasHeight, 25, true, null);
+        const hub = this.spawnNode(minX, maxX, minY, maxY, 25, true, null);
         if (hub) {
             hubNodes.push(hub);
             this.game.addNode(hub);
         }
     }
 
-    // 2. Generate Clusters around the Hubs (Matching colors near hubs)
+    // 2. Generate Clusters around the Hubs
     hubNodes.forEach(hub => {
         const clusterSize = Math.floor(Math.random() * 3) + 3; // 3 to 5 nodes per cluster
         for (let i = 0; i < clusterSize; i++) {
-            const clusterNode = this.spawnNodeNear(hub, 100, 250, 12, hub.color);
+            const clusterNode = this.spawnNodeNear(hub, minX, maxX, minY, maxY, 100, 250, 12, hub.color);
             if (clusterNode) {
                 this.game.addNode(clusterNode);
             }
         }
     });
 
-    // 3. Generate some random "Outpost" nodes (Far away, independent colors)
-    const numOutposts = 5;
+    // 3. Generate some random "Outpost" nodes
+    const numOutposts = Math.floor(Math.random() * 3) + 1;
     for (let i = 0; i < numOutposts; i++) {
-        const outpost = this.spawnNode(canvasWidth, canvasHeight, 15, false, null);
+        const outpost = this.spawnNode(minX, maxX, minY, maxY, 15, false, null);
         if (outpost) {
-            outpost.isOutpost = true; // Special property for 2x flux
+            outpost.isOutpost = true; // Special property for 2.5x flux
             this.game.addNode(outpost);
         }
     }
   }
 
-  spawnNode(maxWidth, maxHeight, radius, isHub, specificColor) {
+  spawnNode(minX, maxX, minY, maxY, radius, isHub, specificColor) {
     let validPosition = false;
     let newX, newY;
     let attempts = 0;
     
     // Try to place node without overlapping
     while (!validPosition && attempts < 50) {
-      newX = Math.random() * (maxWidth - 100) + 50;
-      newY = Math.random() * (maxHeight - 100) + 50;
+      newX = Math.random() * (maxX - minX - 100) + minX + 50;
+      newY = Math.random() * (maxY - minY - 100) + minY + 50;
       validPosition = this.isValidPosition(newX, newY, radius);
       attempts++;
     }
@@ -65,7 +71,7 @@ export class Generator {
     return null;
   }
 
-  spawnNodeNear(targetNode, minRadius, maxRadius, radius, color) {
+  spawnNodeNear(targetNode, minX, maxX, minY, maxY, minRadius, maxRadius, radius, color) {
     let validPosition = false;
     let newX, newY;
     let attempts = 0;
@@ -77,8 +83,8 @@ export class Generator {
         newX = targetNode.x + Math.cos(angle) * distance;
         newY = targetNode.y + Math.sin(angle) * distance;
         
-        // Keep inside bounds (lazy check)
-        if (newX < 50 || newX > window.innerWidth - 50 || newY < 50 || newY > window.innerHeight - 50) {
+        // Keep inside bounds
+        if (newX < minX + 50 || newX > maxX - 50 || newY < minY + 50 || newY > maxY - 50) {
             attempts++;
             continue;
         }

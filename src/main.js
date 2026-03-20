@@ -3,40 +3,61 @@ import { Game } from './engine/Game.js';
 import { Renderer } from './engine/Renderer.js';
 import { InputHandler } from './engine/InputHandler.js';
 import { Generator } from './engine/Generator.js';
+import { OfflineManager } from './engine/OfflineManager.js';
 
 const canvas = document.getElementById('gameCanvas');
 const renderer = new Renderer(canvas);
 const game = new Game(canvas);
-const inputHandler = new InputHandler(canvas, game);
 const generator = new Generator(game);
+const inputHandler = new InputHandler(canvas, game, generator);
 
-// Expand Mechanic Logic
-let expandCost = 50;
-const btnExpand = document.getElementById('btn-expand');
-const costSpan = document.getElementById('expand-cost');
+// Sidebar Logic
+const sidebar = document.getElementById('sidebar');
+const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+const upgradeButtons = document.querySelectorAll('.btn-buy-upgrade');
 
-btnExpand.addEventListener('click', () => {
-    if (game.flux >= expandCost) {
-        // Deduct cost
-        game.flux -= expandCost;
+window.game = game;
+window.generator = generator;
+
+btnToggleSidebar.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+});
+
+function syncUpgrades() {
+    upgradeButtons.forEach(btn => {
+        const color = btn.dataset.color;
+        const level = game.chromaBoosts[color] || 0;
         
-        // Increase cost for next time
-        expandCost = Math.floor(expandCost * 1.5);
-        costSpan.innerText = expandCost;
-        
-        // Generate new node cluster somewhere on screen
-        const tempHub = generator.spawnNode(window.innerWidth, window.innerHeight, 25, true, null);
-        if (tempHub) {
-            game.addNode(tempHub);
-            const clusterSize = Math.floor(Math.random() * 3) + 3;
-            for (let i = 0; i < clusterSize; i++) {
-                const clusterNode = generator.spawnNodeNear(tempHub, 50, 200, 12, tempHub.color);
-                if (clusterNode) {
-                    game.addNode(clusterNode);
-                }
-            }
+        // Calculate current cost: 500 * (1.5 ^ level)
+        let cost = 500;
+        for (let i = 0; i < level; i++) {
+            cost = Math.floor(cost * 1.5);
         }
-    }
+        
+        btn.dataset.cost = cost;
+        btn.innerText = `Lv.${level} - ${cost} PTS`;
+    });
+}
+
+upgradeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        const cost = parseInt(btn.dataset.cost);
+        
+        if (game.points >= cost) {
+            game.points -= cost;
+            
+            // Increment boost level
+            if (!game.chromaBoosts[color]) game.chromaBoosts[color] = 0;
+            game.chromaBoosts[color]++;
+            
+            // Increase cost
+            const newCost = Math.floor(cost * 1.5);
+            btn.dataset.cost = newCost;
+            const newLevel = game.chromaBoosts[color];
+            btn.innerText = `Lv.${newLevel} - ${newCost} PTS`;
+        }
+    });
 });
 
 // Hook up renderer to game loop
@@ -44,14 +65,28 @@ const originalLoop = game.loop.bind(game);
 game.loop = function(time) {
   originalLoop(time);
   
-  // Update button state
-  btnExpand.disabled = game.flux < expandCost;
+  // Update upgrade button states
+  upgradeButtons.forEach(btn => {
+      const cost = parseInt(btn.dataset.cost);
+      btn.disabled = game.points < cost;
+  });
   
   renderer.render(game, inputHandler, time);
 };
 
-// Initial Generation (clusters)
-generator.generateInitialNodes(window.innerWidth, window.innerHeight);
+const lastSaveTime = game.loadGame();
+
+if (!lastSaveTime) {
+    // Initial Generation (clusters) for a new save
+    game.purchasePlot(0, 0, generator, true);
+} else {
+    // Process offline earnings based on the time away
+    const offlineManager = new OfflineManager(game, lastSaveTime);
+    offlineManager.processOfflineEarnings();
+    
+    // Sync the UI buttons with loaded boost levels
+    syncUpgrades();
+}
 
 // Start Game
 game.start();

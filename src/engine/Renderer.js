@@ -120,8 +120,134 @@ export class Renderer {
     this.ctx.setLineDash([]); // Reset
   }
 
+  drawPlots(game) {
+    this.ctx.lineWidth = 2;
+    // Draw bought plots boundaries
+    for (let plotStr of game.purchasedPlots) {
+        const [px, py] = plotStr.split(',').map(Number);
+        const biomeColor = game.getPlotBiome(px, py);
+        
+        if (biomeColor === 'neutral') {
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        } else {
+            // Draw faint colored background based on biome
+            this.ctx.fillStyle = biomeColor;
+            this.ctx.globalAlpha = 0.05; // very faint
+            this.ctx.fillRect(px * game.plotSize, py * game.plotSize, game.plotSize, game.plotSize);
+            this.ctx.globalAlpha = 1.0;
+            
+            this.ctx.strokeStyle = biomeColor;
+            this.ctx.globalAlpha = 0.2;
+        }
+        
+        this.ctx.strokeRect(px * game.plotSize, py * game.plotSize, game.plotSize, game.plotSize);
+        this.ctx.globalAlpha = 1.0; // reset
+        
+        // Draw RECAL button
+        if (px !== 0 || py !== 0) { // Keep origin pristine
+            const cost = Math.max(10, Math.floor(game.getPlotCost(px, py) * 0.25));
+            const canAfford = game.points >= cost;
+            
+            const topX = px * game.plotSize + game.plotSize - 60;
+            const topY = py * game.plotSize + 60;
+            
+            this.ctx.fillStyle = canAfford ? 'rgba(255, 51, 102, 0.2)' : 'rgba(255, 255, 255, 0.05)';
+            this.ctx.beginPath();
+            this.ctx.arc(topX, topY, 20, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            this.ctx.lineWidth = 1.5;
+            this.ctx.strokeStyle = canAfford ? 'rgba(255, 51, 102, 0.8)' : 'rgba(255, 255, 255, 0.3)';
+            this.ctx.stroke();
+            
+            // Icon
+            this.ctx.fillStyle = canAfford ? '#ffffff' : 'rgba(255, 255, 255, 0.5)';
+            this.ctx.font = '14px "Inter", sans-serif';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(`R`, topX, topY);
+            
+            this.ctx.font = '10px "Inter", sans-serif';
+            this.ctx.fillText(`${cost}`, topX, topY + 30);
+            this.ctx.textAlign = 'left';
+        }
+    }
+    
+    // Draw available plots
+    const available = game.getAvailablePlots();
+    for (let p of available) {
+        // Draw dashed border
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        this.ctx.setLineDash([15, 15]);
+        this.ctx.strokeRect(p.x * game.plotSize, p.y * game.plotSize, game.plotSize, game.plotSize);
+        this.ctx.setLineDash([]);
+        
+        // Draw "Claim" Icon
+        const centerX = p.x * game.plotSize + game.plotSize / 2;
+        const centerY = p.y * game.plotSize + game.plotSize / 2;
+        
+        const canAfford = game.points >= p.cost;
+        
+        this.ctx.fillStyle = canAfford ? 'rgba(0, 229, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, 50, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeStyle = canAfford ? 'rgba(0, 229, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)';
+        this.ctx.stroke();
+        
+        this.ctx.fillStyle = canAfford ? '#ffffff' : 'rgba(255, 255, 255, 0.5)';
+        this.ctx.font = '16px "Inter", sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(`CLAIM`, centerX, centerY - 10);
+        this.ctx.font = '14px "Inter", sans-serif';
+        this.ctx.fillText(`${p.cost} PTS`, centerX, centerY + 15);
+        this.ctx.textAlign = 'left'; // Reset
+    }
+  }
+
+  drawEvents(game, time) {
+    for (let ev of game.eventSystem.activeEvents) {
+        this.ctx.beginPath();
+        this.ctx.arc(ev.x, ev.y, ev.radius, 0, Math.PI * 2);
+        
+        const isGolden = ev.isGolden;
+        const color = isGolden ? '#ffcc00' : '#b87333'; // Bright gold vs dim bronze
+        const pulseSpeed = isGolden ? 150 : 400; // Golden pulses faster
+        
+        const pulse = (Math.sin(time / pulseSpeed) + 1) / 2; // 0 to 1
+        
+        this.ctx.fillStyle = color;
+        this.ctx.globalAlpha = 0.5 + (pulse * 0.5);
+        this.ctx.shadowBlur = 15 + (pulse * 25);
+        this.ctx.shadowColor = color;
+        this.ctx.fill();
+        
+        // Inner core
+        this.ctx.beginPath();
+        this.ctx.arc(ev.x, ev.y, ev.radius * 0.4, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.globalAlpha = 1.0;
+        this.ctx.shadowBlur = 0;
+        this.ctx.fill();
+    }
+  }
+
   render(game, inputHandler, time) {
     this.clear();
+    
+    this.ctx.save();
+    // Move the world according to camera
+    this.ctx.scale(game.camera.zoom, game.camera.zoom);
+    this.ctx.translate(-game.camera.x, -game.camera.y);
+    
+    // Draw Plot Boundaries
+    this.drawPlots(game);
+    
+    // Draw Reaction Events
+    this.drawEvents(game, time);
     
     // Draw all active connections (pass time for pulsing)
     game.connections.forEach(conn => this.drawConnection(conn, time));
@@ -141,13 +267,21 @@ export class Renderer {
     // Draw nodes on top
     game.nodes.forEach(node => this.drawNode(node));
     
+    this.ctx.restore();
+    
     // Draw UI overlay
-    this.drawUI(game.flux);
+    this.drawUI(game);
   }
 
-  drawUI(flux) {
+  drawUI(game) {
     this.ctx.fillStyle = '#ffffff';
     this.ctx.font = '24px "Inter", sans-serif';
-    this.ctx.fillText(`FLUX: ${Math.floor(flux)}`, 20, 40);
+    this.ctx.fillText(`POINTS: ${Math.floor(game.points)}`, 20, 40);
+    
+    if (game.eventSystem.globalMultiplier !== 1.0) {
+        this.ctx.fillStyle = game.eventSystem.globalMultiplier > 1 ? '#00ffaa' : '#ff3366';
+        this.ctx.font = '18px "Inter", sans-serif';
+        this.ctx.fillText(`RATE x${game.eventSystem.globalMultiplier} (${Math.ceil(game.eventSystem.multiplierTimer)}s)`, 20, 70);
+    }
   }
 }

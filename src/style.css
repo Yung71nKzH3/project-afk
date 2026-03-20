@@ -26,12 +26,166 @@ body {
 #app {
   width: 100vw;
   height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
 canvas {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+#sidebar {
+  position: absolute;
+  top: 0;
+  right: -300px;
+  width: 300px;
+  height: 100%;
+  background: rgba(10, 10, 25, 0.95);
+  border-left: 1px solid rgba(255,255,255,0.1);
+  transition: right 0.3s ease;
+  padding: 20px;
+  pointer-events: auto;
+  box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+  z-index: 100;
+}
+
+#sidebar.open {
+  right: 0;
+}
+
+#btn-toggle-sidebar {
+  position: absolute;
+  left: -120px;
+  top: 20px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 4px 0 0 4px;
+  font-family: 'Inter', sans-serif;
+  font-weight: bold;
+}
+
+#sidebar-content h2 {
+  font-size: 16px;
+  margin-bottom: 20px;
+  color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  padding-bottom: 10px;
+}
+
+.upgrade-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.btn-buy-upgrade {
+  background: rgba(0,229,255,0.2);
+  color: #00e5ff;
+  border: 1px solid rgba(0,229,255,0.5);
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: 'Inter', sans-serif;
+}
+
+.btn-buy-upgrade.maxed {
+  border-color: #00ffaa;
+  color: #00ffaa;
+  background: rgba(0,255,170,0.1);
+}
+
+.btn-buy-upgrade:disabled:not(.maxed) {
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.3);
+  border-color: rgba(255,255,255,0.1);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: rgba(15, 15, 30, 0.95);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 8px;
+    padding: 30px 40px;
+    text-align: center;
+    color: #fff;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    font-family: 'Inter', sans-serif;
+    min-width: 300px;
+}
+
+.modal-content.danger {
+    border-color: rgba(255, 51, 102, 0.5);
+}
+
+.modal-content h2 {
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.modal-content p {
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 20px;
+}
+
+.modal-content .earnings {
+    font-size: 32px;
+    color: #00ffaa;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+}
+
+.modal-content button {
+    background: rgba(0, 229, 255, 0.2);
+    color: #00e5ff;
+    border: 1px solid rgba(0, 229, 255, 0.5);
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease;
+    margin: 0 5px;
+}
+
+.modal-content button:hover {
+    background: rgba(0, 229, 255, 0.4);
+}
+
+.modal-content button.danger {
+    background: rgba(255, 51, 102, 0.2);
+    color: #ff3366;
+    border-color: rgba(255, 51, 102, 0.5);
+}
+
+.modal-content button.danger:hover {
+    background: rgba(255, 51, 102, 0.4);
 }
 
 #ui-layer {
